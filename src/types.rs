@@ -1,4 +1,3 @@
-use curves::line;
 use flo_canvas::*;
 
 pub struct Coordinates {
@@ -12,10 +11,12 @@ impl Coordinates {
         (self.x * self.x + self.y * self.y).sqrt()
     }
     
-    pub fn normalize(&mut self) {
+    pub fn normalize(&self) -> Coordinates{
         let norm = self.norm();
-        self.x /= norm;
-        self.y /= norm;
+        Coordinates {
+            x: self.x/norm,
+            y: self.y/norm,
+        }
     }
     
     pub fn dot_product(&self, other : &Coordinates) -> f64 {
@@ -48,9 +49,9 @@ pub struct Triangle {
 impl Triangle {
     pub fn normals(&self) -> [Coordinates; 3] {
         
-        let normal1 = self.vertices[0].segment_to(&self.vertices[1]).orthognal_segment();
-        let normal2 = self.vertices[1].segment_to(&self.vertices[2]).orthognal_segment();
-        let normal3 = self.vertices[2].segment_to(&self.vertices[0]).orthognal_segment();
+        let normal1 = self.vertices[0].segment_to(&self.vertices[1]).orthognal_segment().normalize();
+        let normal2 = self.vertices[1].segment_to(&self.vertices[2]).orthognal_segment().normalize();
+        let normal3 = self.vertices[2].segment_to(&self.vertices[0]).orthognal_segment().normalize();
         
         [normal1, normal2, normal3]
     }
@@ -63,17 +64,28 @@ impl Triangle {
         ]
     }
     
-    pub fn include(&self, point : &Coordinates) -> bool {
-        let normals = self.normals();
-        let vertices_to_point = self.vertices_to(point);
-        let mut check = 0;
-        for i in 0..normals.len() {
-            if normals[i].dot_product(&vertices_to_point[i]) >= 0.0 {
-                check += 1;
-            }
-        }
+    pub fn signed_area(&self) -> f64 {
+        0.5 * (-self.vertices[1].y * self.vertices[2].x + self.vertices[0].y * (-self.vertices[1].x + self.vertices[2].x) + self.vertices[0].x * (self.vertices[1].y - self.vertices[2].y) + self.vertices[1].x * self.vertices[2].y)
+    }
+    
+    pub fn barycentric_coordinates_from(&self, point: &Coordinates) -> (f64, f64) {
         
-        check == 3
+        let area = self.signed_area();
+        
+        println!("{:?}", area);
+        
+        let s = 1.0/(2.0*area)*(self.vertices[0].y * self.vertices[2].x - self.vertices[0].x * self.vertices[2].y + (self.vertices[2].y - self.vertices[0].y) * point.x + (self.vertices[0].x - self.vertices[2].x) * point.y);
+        let t = 1.0/(2.0*area)*(self.vertices[0].x * self.vertices[1].y - self.vertices[0].x * self.vertices[1].y + (self.vertices[0].y - self.vertices[1].y) * point.x + (self.vertices[1].x - self.vertices[0].x) * point.y);
+        
+        (s, t)
+        
+    }
+    
+    pub fn include(&self, point : &Coordinates) -> bool {
+        
+        let (s, t) = self.barycentric_coordinates_from(point);
+        println!("{:?} | {:?}", s, t);
+        (s > 0.0) & (t > 0.0) & (1.0 - s - t > 0.0)
     }
     
     pub fn draw(&self, window_dimension: &(Coordinates, Coordinates), canvas: &DrawingTarget, line_color: &Color) {
@@ -114,5 +126,4 @@ pub fn build_triangle(center: Option<Coordinates>, vertices: [Coordinates; 3], a
         vertices: vertices,
         adjacencies: adjacencies,
     }
-    
 }

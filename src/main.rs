@@ -1,5 +1,5 @@
-//use types::{build_coordinates, Coordinates};
 use types::*;
+use gen_vertices::*;
 use flo_canvas::*;
 use flo_draw::*;
 
@@ -7,8 +7,6 @@ mod types;
 mod gen_vertices;
 
 fn main() {
-    
-    
     
     with_2d_graphics(|| {
         
@@ -22,11 +20,14 @@ fn main() {
             adjacencies : [None, None, None],
         };
         
+        let d = build_coordinates(0.5, 0.6);
+        println!("{:?}", triangle.include(&d));
+        
         let canvas = create_drawing_window("Meshing");
         
         let line_color = Color::Rgba(0.0, 0.0, 0.0, 1.0);
         let window_dimension = (build_coordinates(-1.0, -1.0), build_coordinates(2.0, 2.0));
         
-        triangle.draw(&window_dimension, &canvas, &line_color)
+        triangle.draw(&window_dimension, &canvas, &line_color);
     });
 }
