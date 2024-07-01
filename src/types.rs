@@ -1,5 +1,9 @@
+use std::{fmt::Error, result};
+
+use curves::bezier::NormalCurve;
 use flo_canvas::*;
 
+#[derive(Copy, Clone)]
 pub struct Coordinates {
     // Cartesian direct coordinate system
     pub x : f64,
@@ -43,10 +47,26 @@ impl Coordinates {
 pub struct Triangle {
     pub center : Option<Coordinates>,
     pub vertices : [Coordinates; 3],
-    pub adjacencies : [Option<u32>; 3],
+    pub adjacencies : [Option<usize>; 3],
+}
+
+impl Copy for Triangle { }
+
+impl Clone for Triangle {
+    fn clone(&self) -> Triangle {
+        *self
+    }
 }
 
 impl Triangle {
+    
+    pub fn compute_center(&mut self) {
+        self.center = Some(Coordinates {
+            x: (self.vertices[0].x + self.vertices[1].x + self.vertices[2].x) / 3.0,
+            y: (self.vertices[0].y + self.vertices[1].y + self.vertices[2].y) / 3.0,
+        });
+    }
+    
     pub fn normals(&self) -> [Coordinates; 3] {
         
         let normal1 = self.vertices[0].segment_to(&self.vertices[1]).orthognal_segment().normalize();
@@ -70,12 +90,8 @@ impl Triangle {
     
     pub fn barycentric_coordinates_from(&self, point: &Coordinates) -> (f64, f64) {
         
-        let area = self.signed_area();
-        
-        println!("{:?}", area);
-        
-        let s = 1.0/(2.0*area)*(self.vertices[0].y * self.vertices[2].x - self.vertices[0].x * self.vertices[2].y + (self.vertices[2].y - self.vertices[0].y) * point.x + (self.vertices[0].x - self.vertices[2].x) * point.y);
-        let t = 1.0/(2.0*area)*(self.vertices[0].x * self.vertices[1].y - self.vertices[0].x * self.vertices[1].y + (self.vertices[0].y - self.vertices[1].y) * point.x + (self.vertices[1].x - self.vertices[0].x) * point.y);
+        let s = ((self.vertices[1].y - self.vertices[2].y) * (point.x - self.vertices[2].x) + (self.vertices[2].x - self.vertices[1].x) * (point.y - self.vertices[2].y)) / ((self.vertices[1].y - self.vertices[2].y) * (self.vertices[0].x - self.vertices[2].x) + (self.vertices[2].x - self.vertices[1].x) * (self.vertices[0].y - self.vertices[2].y));
+        let t = ((self.vertices[2].y - self.vertices[0].y) * (point.x - self.vertices[2].x) + (self.vertices[0].x - self.vertices[2].x) * (point.y - self.vertices[2].y)) / ((self.vertices[1].y - self.vertices[2].y) * (self.vertices[0].x - self.vertices[2].x) + (self.vertices[2].x - self.vertices[1].x) * (self.vertices[0].y - self.vertices[2].y));
         
         (s, t)
         
@@ -84,7 +100,15 @@ impl Triangle {
     pub fn include(&self, point : &Coordinates) -> bool {
         
         let (s, t) = self.barycentric_coordinates_from(point);
-        println!("{:?} | {:?}", s, t);
+        // println!("Current_triangle : [({:?}, {:?}), ({:?}, {:?}), ({:?}, {:?})]",
+        //     self.vertices[0].x,
+        //     self.vertices[0].y,
+        //     self.vertices[1].x,
+        //     self.vertices[1].y,
+        //     self.vertices[2].x,
+        //     self.vertices[2].y,
+        // );
+        // println!("{:?} | {:?}", s, t);
         (s > 0.0) & (t > 0.0) & (1.0 - s - t > 0.0)
     }
     
@@ -111,6 +135,40 @@ impl Triangle {
         });
         
     }
+    
+    pub fn find_face_to_point(&self, point: &Coordinates) -> Result<usize, &str>{
+        
+        let normals = self.normals();
+        
+        let mut max: i64 = -1;
+        let mut max_value: f64 = 0.0;
+        
+        for i in 0..self.adjacencies.len() {
+            
+            match self.adjacencies[i] {
+                None => (),
+                _ => {
+                    let value = normals[i].dot_product(&self.center.as_ref().expect("Error computing the center in find_face_to_point").segment_to(point));
+                    if value > max_value {
+                        max_value = value;
+                        max = i as i64;
+                    }
+                },
+            }
+        }
+        
+        let result;
+            
+        if max < 0 {
+            result = Err("No face to go to the point");
+        } else {
+            result = Ok(max as usize);
+        }
+        
+        result
+            
+    }
+    
 }
 
 pub fn build_coordinates(x: f64, y: f64) -> Coordinates {
@@ -120,10 +178,12 @@ pub fn build_coordinates(x: f64, y: f64) -> Coordinates {
     }
 }
 
-pub fn build_triangle(center: Option<Coordinates>, vertices: [Coordinates; 3], adjacencies: [Option<u32>; 3]) -> Triangle {
+pub fn build_triangle(center: Option<Coordinates>, vertices: [Coordinates; 3], adjacencies: [Option<usize>; 3]) -> Triangle {
+    
     Triangle {
         center: center,
         vertices: vertices,
         adjacencies: adjacencies,
     }
 }
+
