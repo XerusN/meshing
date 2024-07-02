@@ -5,6 +5,44 @@ pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, las
     let mut i = last_triangle_index;
     let mut result: Option<usize> = None;
     
+    let mut old1;
+    let mut old2 = -1;
+    
+    loop {
+        
+        if i < triangles.len() {
+            
+            println!("{:?}", i);
+            
+            println!("Current_triangle : [({:?}, {:?}), ({:?}, {:?}), ({:?}, {:?})]",
+                triangles[i].vertices[0].x,
+                triangles[i].vertices[0].y,
+                triangles[i].vertices[1].x,
+                triangles[i].vertices[1].y,
+                triangles[i].vertices[2].x,
+                triangles[i].vertices[2].y,
+            );
+            
+            if triangles[i].include(&point) {
+                result = Some(i);
+                break;
+            } else {
+                old1 = i as i64;
+                
+                i = triangles[i].adjacencies[triangles[i].find_face_to_point(point).expect("No face found to the point in find_current_triangle")].expect("No adjacent triangle for this face in find_current_triangle");
+                if old2 == i as i64 {
+                    panic!("i = old");
+                }
+                old2 = old1;
+            }
+
+        } else {
+            break;
+        }
+    }
+    
+    // i = 0;
+    
     // loop {
         
     //     if i < triangles.len() {
@@ -15,33 +53,13 @@ pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, las
     //             result = Some(i);
     //             break;
     //         } else {
-    //             i = triangles[i].adjacencies[triangles[i].find_face_to_point(point).expect("No face found to the point in find_current_triangle")].expect("No adjacent triangle for this face in find_current_triangle");
+    //             i += 1;
     //         }
 
     //     } else {
     //         break;
     //     }
     // }
-    
-    i = 0;
-    
-    loop {
-        
-        if i < triangles.len() {
-            
-            println!("{:?}", i);
-            
-            if triangles[i].include(&point) {
-                result = Some(i);
-                break;
-            } else {
-                i += 1;
-            }
-
-        } else {
-            break;
-        }
-    }
     
     result
     

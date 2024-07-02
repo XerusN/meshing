@@ -37,10 +37,10 @@ fn main() {
         //let window_dimension = (build_coordinates(-100.0, -100.0), build_coordinates(100.0, 100.0));
         
         
-        for point in vertices {
+        for point in &vertices {
             println!("Current point : ({:?}, {:?})", point.x, point.y);
             //println!("{:?}", triangles[0].include(&point));
-            current_triangle = find_current_triangle(&point, &triangles, current_triangle).expect("No triangle found");
+            current_triangle = find_current_triangle(point, &triangles, current_triangle).expect("No triangle found");
             println!("Current_triangle : {:?}", current_triangle);
             
         //     println!("Current_triangle : [({:?}, {:?}), ({:?}, {:?}), ({:?}, {:?})]",
@@ -52,7 +52,7 @@ fn main() {
         //     triangles[current_triangle].vertices[2].y,
         // );
             
-            let stack = insert_triangles(&point, &mut triangles, current_triangle);
+            let stack = insert_triangles(point, &mut triangles, current_triangle);
             println!("New triangles : {:?}", stack);
             
             
@@ -66,5 +66,7 @@ fn main() {
             io::stdin().read_line(&mut _dummy).expect("Error in read");
             
         }
+        
+        println!{"Done!"};
     });
 }

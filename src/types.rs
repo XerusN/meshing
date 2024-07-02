@@ -97,19 +97,21 @@ impl Triangle {
         
     }
     
+    pub fn trilinear_coordinates_from(&self, point: &Coordinates) -> (f64, f64, f64) {
+        
+        let (s, t) = self.barycentric_coordinates_from(point);
+        
+        let a = s / self.vertices[0].segment_to(&self.vertices[1]).norm();
+        let b = t / self.vertices[1].segment_to(&self.vertices[2]).norm();
+        let c = (1.0 - s - t) / self.vertices[2].segment_to(&self.vertices[0]).norm();
+        
+        (a, b, c)
+    }
+    
     pub fn include(&self, point : &Coordinates) -> bool {
         
         let (s, t) = self.barycentric_coordinates_from(point);
-        // println!("Current_triangle : [({:?}, {:?}), ({:?}, {:?}), ({:?}, {:?})]",
-        //     self.vertices[0].x,
-        //     self.vertices[0].y,
-        //     self.vertices[1].x,
-        //     self.vertices[1].y,
-        //     self.vertices[2].x,
-        //     self.vertices[2].y,
-        // );
-        // println!("{:?} | {:?}", s, t);
-        (s > 0.0) & (t > 0.0) & (1.0 - s - t > 0.0)
+        (s >= 0.0) & (t >= 0.0) & (1.0 - s - t >= 0.0)
     }
     
     pub fn draw(&self, window_dimension: &(Coordinates, Coordinates), canvas: &DrawingTarget, line_color: &Color) {
@@ -140,33 +142,54 @@ impl Triangle {
         
         let normals = self.normals();
         
-        let mut max: i64 = -1;
-        let mut max_value: f64 = 0.0;
+        let mut closest_face: i64 = -1;
+        let mut min_distance: f64 = 1000.0;  //might not work if the point field is not rescaled
+        
+        let distances = self.trilinear_coordinates_from(point);
         
         for i in 0..self.adjacencies.len() {
             
             match self.adjacencies[i] {
                 None => (),
                 _ => {
-                    let value = normals[i].dot_product(&self.center.as_ref().expect("Error computing the center in find_face_to_point").segment_to(point));
-                    if value > max_value {
-                        max_value = value;
-                        max = i as i64;
+                    let distance = match i {
+                        0 => distances.1.abs(),
+                        1 => distances.2.abs(),
+                        2 => distances.0.abs(),
+                        _ => panic!(),
+                    };
+                    
+                    if distance < min_distance {
+                        min_distance = distance;
+                        closest_face = i as i64;
                     }
                 },
             }
         }
         
         let result;
-            
-        if max < 0 {
+        
+        println!("distance : {:?}", min_distance);
+        
+        if closest_face < 0 {
             result = Err("No face to go to the point");
         } else {
-            result = Ok(max as usize);
+            result = Ok(closest_face as usize);
         }
         
         result
             
+    }
+    
+    pub fn print_triangle(&self) {
+        println!("Current_triangle : [({:?}, {:?}), ({:?}, {:?}), ({:?}, {:?})]",
+            self.vertices[0].x,
+            self.vertices[0].y,
+            self.vertices[1].x,
+            self.vertices[1].y,
+            self.vertices[2].x,
+            self.vertices[2].y,
+        );
     }
     
 }
