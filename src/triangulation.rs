@@ -41,26 +41,6 @@ pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, las
         }
     }
     
-    // i = 0;
-    
-    // loop {
-        
-    //     if i < triangles.len() {
-            
-    //         println!("{:?}", i);
-            
-    //         if triangles[i].include(&point) {
-    //             result = Some(i);
-    //             break;
-    //         } else {
-    //             i += 1;
-    //         }
-
-    //     } else {
-    //         break;
-    //     }
-    // }
-    
     result
     
 }

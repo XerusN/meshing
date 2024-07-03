@@ -12,6 +12,31 @@ mod triangulation;
 
 fn main() {
     
+    // let point = build_coordinates(0.9, -0.9);
+    // let point = build_coordinates(100.0, 100.0);
+    // let point = build_coordinates(-100.0, -100.0);
+    //let point = build_coordinates(0.9, 0.9);
+    // let triangle = build_triangle(None, [
+    //     build_coordinates(0.0, 0.0),
+    //     build_coordinates(1.0, 0.0),
+    //     build_coordinates(0.0, 1.0)
+    // ], [None; 3]);
+    
+    
+    
+    // for j in -10..11 {
+    //     for i in -10..11 {
+    //         let point = build_coordinates(i as f64 / 5.0, j as f64 / 5.0);
+    //         if triangle.is_point_in_circumucircle(&point) {
+    //             print!("x");
+    //         } else {
+    //             print!(".");
+    //         }
+    //     }
+    //     println!();
+    // }
+    //println!("{:?}", triangle.is_point_in_circumucircle(&point));
+    
     with_2d_graphics(|| {
         
         let vertices = place_vertices(0);

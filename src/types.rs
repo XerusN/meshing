@@ -2,6 +2,7 @@ use std::{fmt::Error, result};
 
 use curves::bezier::NormalCurve;
 use flo_canvas::*;
+use std::f64::consts::PI;
 
 #[derive(Copy, Clone)]
 pub struct Coordinates {
@@ -23,11 +24,11 @@ impl Coordinates {
         }
     }
     
-    pub fn dot_product(&self, other : &Coordinates) -> f64 {
+    pub fn dot_product(&self, other : &Self) -> f64 {
         self.x * other.x + self.y * other.y
     }
     
-    pub fn segment_to(&self, other : &Coordinates) -> Coordinates {
+    pub fn segment_to(&self, other : &Self) -> Coordinates {
         Coordinates{
             x: other.x - self.x,
             y: other.y - self.y,
@@ -40,6 +41,10 @@ impl Coordinates {
             x: self.y,
             y: - self.x,
         }
+    }
+    
+    pub fn angle_with(&self, other: &Self) -> f64 {
+        (self.dot_product(other) / (self.norm() * other.norm())).acos()
     }
     
 }
@@ -74,6 +79,16 @@ impl Triangle {
         let normal3 = self.vertices[2].segment_to(&self.vertices[0]).orthognal_segment().normalize();
         
         [normal1, normal2, normal3]
+    }
+    
+    pub fn edges(&self) -> [Coordinates; 3] {
+        
+        [
+            self.vertices[0].segment_to(&self.vertices[1]),
+            self.vertices[1].segment_to(&self.vertices[2]),
+            self.vertices[2].segment_to(&self.vertices[0]),
+        ]
+        
     }
     
     pub fn vertices_to(&self, point : &Coordinates) -> [Coordinates; 3] {
@@ -190,6 +205,82 @@ impl Triangle {
             self.vertices[2].x,
             self.vertices[2].y,
         );
+    }
+    
+    pub fn circumcircle_radius(&self) -> f64{
+        
+        let mut radius = 0.0;
+        for edge in self.edges() {
+            radius *= edge.norm();
+        }
+        
+        radius /= 4.0 * self.signed_area().abs();
+        
+        radius
+        
+    }
+    
+    pub fn is_point_in_circumucircle(&self, point: &Coordinates) -> bool {
+        
+        //dont know what's going on
+        
+        // let edges = self.edges();
+        
+        // let cos_a = - edges[2].dot_product(&edges[1]);
+        // let cos_b = self.vertices[0].segment_to(point).dot_product(&self.vertices[1].segment_to(point));
+        
+        // let mut result;
+        
+        // if (cos_a >= 0.0) & (cos_b >= 0.0) {
+        //     result = false;
+        // } else if (cos_a < 0.0) & (cos_b < 0.0) {
+        //     result = true;
+        // } else {
+        //     let sin_a = - edges[2].x * edges[1].y + edges[2].y * edges[1].x;
+        //     let sin_b = self.vertices[0].segment_to(point).y * self.vertices[1].segment_to(point).x - self.vertices[0].segment_to(point).x * self.vertices[1].segment_to(point).y;
+        //     let sin_ab = sin_a * cos_b + sin_b * cos_a;
+        //     if sin_ab < 0.0 {
+        //         result = true;
+        //     } else {
+        //         result = false;
+        //     }
+        // }
+        
+        // let pa = point.segment_to(&self.vertices[0]);
+        // let pb = point.segment_to(&self.vertices[1]);
+        // let pc = point.segment_to(&self.vertices[2]);
+        
+        // let angle_pab = pa.angle_with(&pb);
+        // println!("{:?}", angle_pab);
+        // let angle_pbc = pb.angle_with(&pc);
+        // println!("{:?}", angle_pbc);
+        // let angle_pca = pc.angle_with(&pa);
+        // println!("{:?}", angle_pca);
+        
+        // let sum = angle_pab + angle_pbc + angle_pca;
+        
+        // println!("{:?}", sum);
+        
+        // let result;
+        
+        // if sum < 2.0 * PI {
+        //     result = true;
+        // } else {
+        //     result = false;
+        // }
+        
+        let pa = point.segment_to(&self.vertices[0]);
+        let pb = point.segment_to(&self.vertices[1]);
+        let pc = point.segment_to(&self.vertices[2]);
+        
+        //see the circumcircle wikipedia page, this is the determinant of a matrix which will tell if the point is inside or outside of the circumcircle
+        let det = pa.dot_product(&pa) * (pb.x * pc.y - pc.x * pb.y)
+            - pb.dot_product(&pb) * (pa.x * pc.y - pc.x * pa.y)
+            + pc.dot_product(&pc) * (pa.x * pb.y - pb.x * pa.y)
+        ;
+        
+        det > 0.0
+        
     }
     
 }
