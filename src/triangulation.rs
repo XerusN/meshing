@@ -1,4 +1,5 @@
 use crate::types::*;
+use std::io;
 
 pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, last_triangle_index: usize) -> Option<usize> {
     
@@ -8,20 +9,37 @@ pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, las
     let mut old1;
     let mut old2 = -1;
     
+    // loop {
+        
+    //     if i < triangles.len() {
+            
+    //         println!("{:?}", i);
+            
+    //         if triangles[i].include(&point) {
+    //             result = Some(i);
+    //             break;
+    //         } else {
+    //             old1 = i as i64;
+                
+    //             i = triangles[i].adjacencies[triangles[i].find_face_to_point(point, old2).expect("No face found to the point in find_current_triangle")].expect("No adjacent triangle for this face in find_current_triangle");
+    //             if old2 == i as i64 {
+    //                 panic!("i = old");
+    //             }
+    //             old2 = old1;
+    //         }
+
+    //     } else {
+    //         break;
+    //     }
+    // }
+    
+    i = 0;
+    
     loop {
         
         if i < triangles.len() {
             
             println!("{:?}", i);
-            
-            println!("Current_triangle : [({:?}, {:?}), ({:?}, {:?}), ({:?}, {:?})]",
-                triangles[i].vertices[0].x,
-                triangles[i].vertices[0].y,
-                triangles[i].vertices[1].x,
-                triangles[i].vertices[1].y,
-                triangles[i].vertices[2].x,
-                triangles[i].vertices[2].y,
-            );
             
             if triangles[i].include(&point) {
                 result = Some(i);
@@ -29,7 +47,7 @@ pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, las
             } else {
                 old1 = i as i64;
                 
-                i = triangles[i].adjacencies[triangles[i].find_face_to_point(point).expect("No face found to the point in find_current_triangle")].expect("No adjacent triangle for this face in find_current_triangle");
+                i += 1;
                 if old2 == i as i64 {
                     panic!("i = old");
                 }
@@ -45,7 +63,7 @@ pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, las
     
 }
 
-pub fn insert_triangles(point: &Coordinates, triangles : &mut Vec<Triangle>, current_triangle: usize) -> Option<Vec<usize>> {
+pub fn insert_triangles(point: &Coordinates, triangles : &mut Vec<Triangle>, current_triangle: usize) -> Vec<usize> {
     
     let old_triangle = triangles[current_triangle].clone();
     let mut new_triangles = Vec::new();
@@ -79,12 +97,101 @@ pub fn insert_triangles(point: &Coordinates, triangles : &mut Vec<Triangle>, cur
         };
     }
     
-    Some(new_triangles)
+    new_triangles
     
 }
 
-pub fn deal_with_stack(stack : Vec<usize>, triangles : &mut Vec<Triangle>) {
+pub fn deal_with_delaunay_condition(stack : &mut Vec<usize>, triangles : &mut Vec<Triangle>, point: &Coordinates) {
     
-    //
+    if stack.is_empty() {
+        panic!("stack is empty");
+    }
+    
+    loop {
+        
+        println!("Stack : {:?}", stack);
+        let mut _dummy = String::new();
+        io::stdin().read_line(&mut _dummy).expect("Error in read");
+        
+        let triangle_id = match stack.pop() {
+            None => {
+                println!("Empty stack");
+                break;
+            },
+            Some(id) => id,
+        };
+        
+        let triangle = triangles[triangle_id].clone();
+    
+        let point_local_id = match triangle.find_point_in_triangle(point) {
+            None => panic!("Triangle not containing current point on the stack"),
+            Some(id) => id,
+        };
+        
+        let (opposite_triangle, opposite_triangle_id) = match triangle.find_face_opposite_to(point_local_id) {
+            None => continue,   //No edge swap needed
+            Some(id) => (triangles[id].clone(), id),
+        };
+        
+        //If point is not is circumcircle no edge swap is needed
+        if !opposite_triangle.is_point_in_circumucircle(point) {
+            continue;
+        }
+        
+        let opposite_point_local_id = match opposite_triangle.find_point_local_id_opposite_to(triangle_id) {
+            None => panic!("source triangle is not adjacent to the opposite? FF"),
+            Some(id) => id,
+        };
+        
+        println!("Point local id : {:?}", point_local_id);
+        println!("Opposite point local id : {:?}", opposite_point_local_id);
+        
+        let new_triangle_1 = Triangle {
+            center: None,
+            vertices: [point.clone(), opposite_triangle.vertices[opposite_point_local_id].clone(), triangle.vertices[(point_local_id + 2) % 3].clone()],
+            adjacencies: [Some(opposite_triangle_id), opposite_triangle.adjacencies[opposite_point_local_id], triangle.adjacencies[(point_local_id + 2) % 3]],
+        };
+        
+        match opposite_triangle.adjacencies[opposite_point_local_id] {
+            None => (),
+            Some(id) => {
+                for i in 0..triangles[id].adjacencies.len() {
+                    if triangles[id].adjacencies[i] == Some(opposite_triangle_id) {
+                        triangles[id].adjacencies[i] = Some(triangle_id);
+                    }
+                }
+            },
+        }
+        
+        let new_triangle_2 = Triangle {
+            center: None,
+            vertices: [point.clone(), triangle.vertices[(point_local_id + 1) % 3].clone(), opposite_triangle.vertices[opposite_point_local_id].clone()],
+            adjacencies: [triangle.adjacencies[point_local_id], opposite_triangle.adjacencies[(opposite_point_local_id + 2) % 3], Some(triangle_id)],
+        };
+        
+        match triangle.adjacencies[point_local_id] {
+            None => (),
+            Some(id) => {
+                for i in 0..triangles[id].adjacencies.len() {
+                    if triangles[id].adjacencies[i] == Some(triangle_id) {
+                        triangles[id].adjacencies[i] = Some(opposite_triangle_id);
+                    }
+                }
+            },
+        }
+        
+        triangles[triangle_id] = new_triangle_1;
+        triangles[opposite_triangle_id] = new_triangle_2;
+        
+        if !stack.contains(&triangle_id) {
+            stack.push(triangle_id);
+        }
+        if !stack.contains(&opposite_triangle_id) {
+            stack.push(opposite_triangle_id);
+        }
+        
+        println!("Swap done")
+        
+    }
     
 }

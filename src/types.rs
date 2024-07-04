@@ -4,7 +4,7 @@ use curves::bezier::NormalCurve;
 use flo_canvas::*;
 use std::f64::consts::PI;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct Coordinates {
     // Cartesian direct coordinate system
     pub x : f64,
@@ -116,9 +116,14 @@ impl Triangle {
         
         let (s, t) = self.barycentric_coordinates_from(point);
         
+        //false according to wikipedia
         let a = s / self.vertices[0].segment_to(&self.vertices[1]).norm();
         let b = t / self.vertices[1].segment_to(&self.vertices[2]).norm();
         let c = (1.0 - s - t) / self.vertices[2].segment_to(&self.vertices[0]).norm();
+        
+        let a = s / self.vertices[1].segment_to(&self.vertices[2]).norm();
+        let b = t / self.vertices[2].segment_to(&self.vertices[0]).norm();
+        let c = (1.0 - s - t) / self.vertices[0].segment_to(&self.vertices[1]).norm();
         
         (a, b, c)
     }
@@ -153,7 +158,7 @@ impl Triangle {
         
     }
     
-    pub fn find_face_to_point(&self, point: &Coordinates) -> Result<usize, &str>{
+    pub fn find_face_to_point(&self, point: &Coordinates, old_triangle: i64) -> Result<usize, &str>{
         
         let normals = self.normals();
         
@@ -162,7 +167,13 @@ impl Triangle {
         
         let distances = self.trilinear_coordinates_from(point);
         
+        self.print_triangle();
+        println!("Distances : {:?}", distances);
+        
         for i in 0..self.adjacencies.len() {
+            if i as i64 == old_triangle {
+                //continue;
+            }
             
             match self.adjacencies[i] {
                 None => (),
@@ -182,9 +193,52 @@ impl Triangle {
             }
         }
         
+        // let mut closest_face: i64 = -1;
+        // let mut min_distance: f64 = 1000.0;
+        
+        // for i in 0..self.adjacencies.len() {
+            
+        //     match self.adjacencies[i] {
+        //         None => (),
+        //         _ => {
+        //             let line = self.vertices[i].segment_to(&self.vertices[(i + 1) % 3]);
+                    
+        //             let distance = (line.y * point.x - line.x * point.y + line.x * self.vertices[i].y - line.y * self.vertices[i].x) / line.norm();
+                    
+        //             if distance.abs() < min_distance {
+        //                 min_distance = distance.abs();
+        //                 closest_face = i as i64;
+        //             }
+        //         },
+        //     }
+        // }
+        
+        // let mut closest_face: i64 = -1;
+        // let mut min_distance: f64 = 1000.0;
+        
+        // let (s, t) = self.barycentric_coordinates_from(point);
+        // let area = self.signed_area();
+        
+        // for i in 0..self.adjacencies.len() {
+            
+        //     match self.adjacencies[i] {
+        //         None => (),
+        //         _ => {
+        //             let line = self.vertices[i].segment_to(&self.vertices[(i + 1) % 3]);
+                    
+        //             let distance = ((1.0 - s - t).abs() * 2.0 * area) / self.vertices[i].dot_product(&self.vertices[(i + 1) % 3]);
+                    
+        //             if distance.abs() < min_distance {
+        //                 min_distance = distance.abs();
+        //                 closest_face = i as i64;
+        //             }
+        //         },
+        //     }
+        // }
+        
         let result;
         
-        println!("distance : {:?}", min_distance);
+        //println!("distance : {:?}", min_distance);
         
         if closest_face < 0 {
             result = Err("No face to go to the point");
@@ -193,7 +247,7 @@ impl Triangle {
         }
         
         result
-            
+        
     }
     
     pub fn print_triangle(&self) {
@@ -205,6 +259,7 @@ impl Triangle {
             self.vertices[2].x,
             self.vertices[2].y,
         );
+        println!("Adjacencies : {:?}", self.adjacencies);
     }
     
     pub fn circumcircle_radius(&self) -> f64{
@@ -217,70 +272,49 @@ impl Triangle {
         radius /= 4.0 * self.signed_area().abs();
         
         radius
-        
     }
     
     pub fn is_point_in_circumucircle(&self, point: &Coordinates) -> bool {
-        
-        //dont know what's going on
-        
-        // let edges = self.edges();
-        
-        // let cos_a = - edges[2].dot_product(&edges[1]);
-        // let cos_b = self.vertices[0].segment_to(point).dot_product(&self.vertices[1].segment_to(point));
-        
-        // let mut result;
-        
-        // if (cos_a >= 0.0) & (cos_b >= 0.0) {
-        //     result = false;
-        // } else if (cos_a < 0.0) & (cos_b < 0.0) {
-        //     result = true;
-        // } else {
-        //     let sin_a = - edges[2].x * edges[1].y + edges[2].y * edges[1].x;
-        //     let sin_b = self.vertices[0].segment_to(point).y * self.vertices[1].segment_to(point).x - self.vertices[0].segment_to(point).x * self.vertices[1].segment_to(point).y;
-        //     let sin_ab = sin_a * cos_b + sin_b * cos_a;
-        //     if sin_ab < 0.0 {
-        //         result = true;
-        //     } else {
-        //         result = false;
-        //     }
-        // }
-        
-        // let pa = point.segment_to(&self.vertices[0]);
-        // let pb = point.segment_to(&self.vertices[1]);
-        // let pc = point.segment_to(&self.vertices[2]);
-        
-        // let angle_pab = pa.angle_with(&pb);
-        // println!("{:?}", angle_pab);
-        // let angle_pbc = pb.angle_with(&pc);
-        // println!("{:?}", angle_pbc);
-        // let angle_pca = pc.angle_with(&pa);
-        // println!("{:?}", angle_pca);
-        
-        // let sum = angle_pab + angle_pbc + angle_pca;
-        
-        // println!("{:?}", sum);
-        
-        // let result;
-        
-        // if sum < 2.0 * PI {
-        //     result = true;
-        // } else {
-        //     result = false;
-        // }
         
         let pa = point.segment_to(&self.vertices[0]);
         let pb = point.segment_to(&self.vertices[1]);
         let pc = point.segment_to(&self.vertices[2]);
         
         //see the circumcircle wikipedia page, this is the determinant of a matrix which will tell if the point is inside or outside of the circumcircle
+        // or https://stackoverflow.com/questions/39984709/how-can-i-check-wether-a-point-is-inside-the-circumcircle-of-3-points
         let det = pa.dot_product(&pa) * (pb.x * pc.y - pc.x * pb.y)
             - pb.dot_product(&pb) * (pa.x * pc.y - pc.x * pa.y)
             + pc.dot_product(&pc) * (pa.x * pb.y - pb.x * pa.y)
         ;
         
         det > 0.0
+    }
+    
+    pub fn find_point_in_triangle(&self, point: &Coordinates) -> Option<usize> {
         
+        for i in 0..self.vertices.len() {
+            if point == &self.vertices[i] {
+                return Some(i);
+            }
+        }
+        
+        None
+    }
+    
+    pub fn find_face_opposite_to(&self, point_local_id: usize) -> Option<usize> {
+        
+        self.adjacencies[(point_local_id + 1) % 3]
+        
+    }
+    
+    pub fn find_point_local_id_opposite_to(&self, adjacent_triangle_id: usize) -> Option<usize> {
+        for i in 0..3 {
+            if self.adjacencies[i] == Some(adjacent_triangle_id) {
+                return Some((i + 2) % 3);
+            }
+        }
+        
+        None
     }
     
 }

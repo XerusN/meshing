@@ -64,24 +64,51 @@ fn main() {
         
         for point in &vertices {
             println!("Current point : ({:?}, {:?})", point.x, point.y);
-            //println!("{:?}", triangles[0].include(&point));
             current_triangle = find_current_triangle(point, &triangles, current_triangle).expect("No triangle found");
-            println!("Current_triangle : {:?}", current_triangle);
             
-        //     println!("Current_triangle : [({:?}, {:?}), ({:?}, {:?}), ({:?}, {:?})]",
-        //     triangles[current_triangle].vertices[0].x,
-        //     triangles[current_triangle].vertices[0].y,
-        //     triangles[current_triangle].vertices[1].x,
-        //     triangles[current_triangle].vertices[1].y,
-        //     triangles[current_triangle].vertices[2].x,
-        //     triangles[current_triangle].vertices[2].y,
-        // );
+            let mut stack = insert_triangles(point, &mut triangles, current_triangle);
+            //println!("New triangles : {:?}", stack);
             
-            let stack = insert_triangles(point, &mut triangles, current_triangle);
-            println!("New triangles : {:?}", stack);
+            canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
             
+            for triangle in &triangles {
+                triangle.draw(&window_dimension, &canvas, &line_color);
+            }
             
-            canvas.draw(|gc| { gc.clear() });
+            if triangles.len() > 13 {
+                println!("triangle 9");
+                triangles[9].print_triangle();
+                println!();
+                println!("triangle 5");
+                triangles[5].print_triangle();
+                println!();
+                println!("triangle 12");
+                triangles[12].print_triangle();
+                println!();
+                println!("triangle 13");
+                triangles[13].print_triangle();
+                println!();
+            }
+            
+            deal_with_delaunay_condition(&mut stack, &mut triangles, point);
+            
+            if triangles.len() > 13 {
+                println!("triangle 9");
+                triangles[9].print_triangle();
+                println!();
+                println!("triangle 5");
+                triangles[5].print_triangle();
+                println!();
+                println!("triangle 12");
+                triangles[12].print_triangle();
+                println!();
+                println!("triangle 13");
+                triangles[13].print_triangle();
+                println!();
+                //panic!();
+            }
+            
+            canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
             
             for triangle in &triangles {
                 triangle.draw(&window_dimension, &canvas, &line_color);
