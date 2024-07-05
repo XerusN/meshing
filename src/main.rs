@@ -1,4 +1,5 @@
 use std::io;
+use std::{thread, time};
 
 use types::*;
 use gen_vertices::*;
@@ -39,7 +40,9 @@ fn main() {
     
     with_2d_graphics(|| {
         
-        let vertices = place_vertices(0);
+        let time_step = time::Duration::from_millis(100);
+        
+        let vertices = place_vertices(1);
         
         let mut triangles: Vec<Triangle> = Vec::new();
         
@@ -51,11 +54,14 @@ fn main() {
         
         big_triangle.compute_center();
         
-        triangles.push(big_triangle);
+        triangles.push(big_triangle.clone());
         
         let mut current_triangle = 0;
         
         let canvas = create_drawing_window("Meshing");
+        
+        let mut _dummy = String::new();
+        io::stdin().read_line(&mut _dummy).expect("Error in read");
         
         let line_color = Color::Rgba(0.0, 0.0, 0.0, 1.0);
         let window_dimension = (build_coordinates(-10.0, -10.0), build_coordinates(10.0, 10.0));
@@ -63,11 +69,25 @@ fn main() {
         
         
         for point in &vertices {
-            println!("Current point : ({:?}, {:?})", point.x, point.y);
+            //println!("Current point : ({:?}, {:?})", point.x, point.y);
             current_triangle = find_current_triangle(point, &triangles, current_triangle).expect("No triangle found");
             
             let mut stack = insert_triangles(point, &mut triangles, current_triangle);
-            //println!("New triangles : {:?}", stack);
+            
+            // if triangles.len() > 13 {
+            //     println!("triangle 9");
+            //     triangles[9].print_triangle();
+            //     println!();
+            //     println!("triangle 5");
+            //     triangles[5].print_triangle();
+            //     println!();
+            //     println!("triangle 12");
+            //     triangles[12].print_triangle();
+            //     println!();
+            //     println!("triangle 13");
+            //     triangles[13].print_triangle();
+            //     println!();
+            // }
             
             canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
             
@@ -75,48 +95,29 @@ fn main() {
                 triangle.draw(&window_dimension, &canvas, &line_color);
             }
             
-            if triangles.len() > 13 {
-                println!("triangle 9");
-                triangles[9].print_triangle();
-                println!();
-                println!("triangle 5");
-                triangles[5].print_triangle();
-                println!();
-                println!("triangle 12");
-                triangles[12].print_triangle();
-                println!();
-                println!("triangle 13");
-                triangles[13].print_triangle();
-                println!();
-            }
+            thread::sleep(time_step);
             
             deal_with_delaunay_condition(&mut stack, &mut triangles, point);
             
-            if triangles.len() > 13 {
-                println!("triangle 9");
-                triangles[9].print_triangle();
-                println!();
-                println!("triangle 5");
-                triangles[5].print_triangle();
-                println!();
-                println!("triangle 12");
-                triangles[12].print_triangle();
-                println!();
-                println!("triangle 13");
-                triangles[13].print_triangle();
-                println!();
-                //panic!();
-            }
-            
             canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
             
             for triangle in &triangles {
                 triangle.draw(&window_dimension, &canvas, &line_color);
             }
             
-            let mut _dummy = String::new();
-            io::stdin().read_line(&mut _dummy).expect("Error in read");
+            thread::sleep(time_step);
             
+            // let mut _dummy = String::new();
+            // io::stdin().read_line(&mut _dummy).expect("Error in read");
+            
+        }
+        
+        remove_big_triangle(&mut triangles, &big_triangle);
+        
+        canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
+        
+        for triangle in &triangles {
+            triangle.draw(&window_dimension, &canvas, &line_color);
         }
         
         println!{"Done!"};

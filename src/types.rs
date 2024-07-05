@@ -155,10 +155,11 @@ impl Triangle {
             gc.stroke_color(*line_color);
             gc.stroke();
         });
-        
     }
     
     pub fn find_face_to_point(&self, point: &Coordinates, old_triangle: i64) -> Result<usize, &str>{
+        
+        // Not working yet, wip. But should be broken no matter what when implementing the constrined version of the triangulation
         
         let normals = self.normals();
         

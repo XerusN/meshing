@@ -1,4 +1,5 @@
 use crate::types::*;
+use core::panic;
 use std::io;
 
 pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, last_triangle_index: usize) -> Option<usize> {
@@ -6,8 +7,10 @@ pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, las
     let mut i = last_triangle_index;
     let mut result: Option<usize> = None;
     
-    let mut old1;
-    let mut old2 = -1;
+    
+    // Not working yet, wip. But should be broken no matter what when implementing the constrined version of the triangulation
+    // let mut old1;
+    // let mut old2 = -1;
     
     // loop {
         
@@ -39,23 +42,17 @@ pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, las
         
         if i < triangles.len() {
             
-            println!("{:?}", i);
+            //println!("{:?}", i);
             
             if triangles[i].include(&point) {
                 result = Some(i);
                 break;
             } else {
-                old1 = i as i64;
-                
                 i += 1;
-                if old2 == i as i64 {
-                    panic!("i = old");
-                }
-                old2 = old1;
             }
 
         } else {
-            break;
+            panic!("Point not found in any vertices");
         }
     }
     
@@ -109,13 +106,13 @@ pub fn deal_with_delaunay_condition(stack : &mut Vec<usize>, triangles : &mut Ve
     
     loop {
         
-        println!("Stack : {:?}", stack);
-        let mut _dummy = String::new();
-        io::stdin().read_line(&mut _dummy).expect("Error in read");
+        // println!("Stack : {:?}", stack);
+        // let mut _dummy = String::new();
+        // io::stdin().read_line(&mut _dummy).expect("Error in read");
         
         let triangle_id = match stack.pop() {
             None => {
-                println!("Empty stack");
+                //println!("Empty stack");
                 break;
             },
             Some(id) => id,
@@ -142,9 +139,6 @@ pub fn deal_with_delaunay_condition(stack : &mut Vec<usize>, triangles : &mut Ve
             None => panic!("source triangle is not adjacent to the opposite? FF"),
             Some(id) => id,
         };
-        
-        println!("Point local id : {:?}", point_local_id);
-        println!("Opposite point local id : {:?}", opposite_point_local_id);
         
         let new_triangle_1 = Triangle {
             center: None,
@@ -190,7 +184,37 @@ pub fn deal_with_delaunay_condition(stack : &mut Vec<usize>, triangles : &mut Ve
             stack.push(opposite_triangle_id);
         }
         
-        println!("Swap done")
+    }
+}
+
+pub fn remove_big_triangle(triangles: &mut Vec<Triangle>, big_triangle: &Triangle) {
+    
+    let mut i = 0;
+    
+    loop {
+        
+        if i >= triangles.len() {
+            break;
+        }
+        
+        if (big_triangle.find_point_in_triangle(&triangles[i].vertices[0]) != None) |
+            (big_triangle.find_point_in_triangle(&triangles[i].vertices[1]) != None) |
+            (big_triangle.find_point_in_triangle(&triangles[i].vertices[2]) != None)
+        {
+            for k in 0..triangles.len() {
+                for j in 0..3 {
+                    if triangles[k].adjacencies[j] == Some(i) {
+                        triangles[k].adjacencies[j] = None;
+                    } else if triangles[k].adjacencies[j] == Some(triangles.len() - 1) {
+                        triangles[k].adjacencies[j] = Some(i);
+                    }
+                }
+            }
+            triangles.swap_remove(i);
+            i -= 1;
+        }
+        
+        i += 1;
         
     }
     
