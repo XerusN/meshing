@@ -42,7 +42,9 @@ fn main() {
         
         let time_step = time::Duration::from_millis(100);
         
-        let vertices = place_vertices(1);
+        let mut vertices = place_vertices(1);
+        
+        let (min, max) = rescale_vertices(&mut vertices);
         
         let mut triangles: Vec<Triangle> = Vec::new();
         
@@ -113,6 +115,8 @@ fn main() {
         }
         
         remove_big_triangle(&mut triangles, &big_triangle);
+        
+        scale_back(&mut vertices, &mut triangles, (&min, &max));
         
         canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
         

@@ -2,6 +2,64 @@ use crate::types::*;
 use core::panic;
 use std::io;
 
+pub fn rescale_vertices(vertices: &mut Vec<Coordinates>) -> (Coordinates, Coordinates) {
+    
+    let (mut x_max, mut x_min) = (vertices[0].x, vertices[0].x);
+    let (mut y_max, mut y_min) = (vertices[0].y, vertices[0].y);
+    
+    for vertex in &*vertices {
+        
+        if vertex.x > x_max {
+            x_max = vertex.x;
+        } else if vertex.x < x_min {
+            x_min = vertex.x;
+        }
+        if vertex.y > y_max {
+            y_max = vertex.y;
+        } else if vertex.y < y_min {
+            y_min = vertex.y;
+        }
+    }
+    
+    let scale_factor = if x_max - x_min > y_max - y_min {
+        x_max - x_min
+    } else {
+        y_max - y_min
+    };
+    
+    for vertex in &mut *vertices {
+        vertex.x = (vertex.x - x_min) / scale_factor;
+        vertex.y = (vertex.y - y_min) / scale_factor;
+    }
+    
+    (build_coordinates(x_min, y_min), build_coordinates(x_max, y_max))
+}
+
+pub fn scale_back(vertices: &mut Vec<Coordinates>, triangles : &mut Vec<Triangle>, (min, max): (&Coordinates, &Coordinates)) {
+    
+    let scale_factor = if max.x - min.x > max.y - min.y {
+        max.x - min.x
+    } else {
+        max.y - min.y
+    };
+    
+    for vertex in &mut *vertices {
+        
+        vertex.x = vertex.x * scale_factor + min.x;
+        vertex.y = vertex.y * scale_factor + min.y;
+        
+    }
+    
+    for triangle in &mut *triangles {
+        
+        for i in 0..triangle.vertices.len() {
+            triangle.vertices[i].x = triangle.vertices[i].x * scale_factor + min.x;
+            triangle.vertices[i].y = triangle.vertices[i].y * scale_factor + min.y;
+        }
+    }
+    
+}
+
 pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, last_triangle_index: usize) -> Option<usize> {
     
     let mut i = last_triangle_index;
