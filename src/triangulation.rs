@@ -269,11 +269,9 @@ pub fn remove_big_triangle(triangles: &mut Vec<Triangle>, big_triangle: &Triangl
                 }
             }
             triangles.swap_remove(i);
-            i -= 1;
+        } else {
+            i += 1;
         }
-        
-        i += 1;
-        
     }
     
 }

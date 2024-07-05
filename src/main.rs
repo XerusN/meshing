@@ -13,36 +13,13 @@ mod triangulation;
 
 fn main() {
     
-    // let point = build_coordinates(0.9, -0.9);
-    // let point = build_coordinates(100.0, 100.0);
-    // let point = build_coordinates(-100.0, -100.0);
-    //let point = build_coordinates(0.9, 0.9);
-    // let triangle = build_triangle(None, [
-    //     build_coordinates(0.0, 0.0),
-    //     build_coordinates(1.0, 0.0),
-    //     build_coordinates(0.0, 1.0)
-    // ], [None; 3]);
-    
-    
-    
-    // for j in -10..11 {
-    //     for i in -10..11 {
-    //         let point = build_coordinates(i as f64 / 5.0, j as f64 / 5.0);
-    //         if triangle.is_point_in_circumucircle(&point) {
-    //             print!("x");
-    //         } else {
-    //             print!(".");
-    //         }
-    //     }
-    //     println!();
-    // }
-    //println!("{:?}", triangle.is_point_in_circumucircle(&point));
-    
     with_2d_graphics(|| {
         
         let time_step = time::Duration::from_millis(100);
         
-        let mut vertices = place_vertices(1);
+        let mut vertices = place_vertices(3);
+        
+        println!("{:?}", vertices.len());
         
         let (min, max) = rescale_vertices(&mut vertices);
         
@@ -66,9 +43,10 @@ fn main() {
         io::stdin().read_line(&mut _dummy).expect("Error in read");
         
         let line_color = Color::Rgba(0.0, 0.0, 0.0, 1.0);
-        let window_dimension = (build_coordinates(-10.0, -10.0), build_coordinates(10.0, 10.0));
+        let window_dimension = (min, max);
         //let window_dimension = (build_coordinates(-100.0, -100.0), build_coordinates(100.0, 100.0));
         
+        let mut counter = 0;
         
         for point in &vertices {
             //println!("Current point : ({:?}, {:?})", point.x, point.y);
@@ -76,41 +54,26 @@ fn main() {
             
             let mut stack = insert_triangles(point, &mut triangles, current_triangle);
             
-            // if triangles.len() > 13 {
-            //     println!("triangle 9");
-            //     triangles[9].print_triangle();
-            //     println!();
-            //     println!("triangle 5");
-            //     triangles[5].print_triangle();
-            //     println!();
-            //     println!("triangle 12");
-            //     triangles[12].print_triangle();
-            //     println!();
-            //     println!("triangle 13");
-            //     triangles[13].print_triangle();
-            //     println!();
+            // canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
+            
+            // for triangle in &triangles {
+            //     triangle.draw(&window_dimension, &canvas, &line_color);
             // }
             
-            canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
-            
-            for triangle in &triangles {
-                triangle.draw(&window_dimension, &canvas, &line_color);
-            }
-            
-            thread::sleep(time_step);
+            //thread::sleep(time_step);
             
             deal_with_delaunay_condition(&mut stack, &mut triangles, point);
             
-            canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
+            // canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
             
-            for triangle in &triangles {
-                triangle.draw(&window_dimension, &canvas, &line_color);
-            }
+            // for triangle in &triangles {
+            //     triangle.draw(&window_dimension, &canvas, &line_color);
+            // }
             
-            thread::sleep(time_step);
+            //thread::sleep(time_step);
             
-            // let mut _dummy = String::new();
-            // io::stdin().read_line(&mut _dummy).expect("Error in read");
+            println!("{:?}", counter);
+            counter += 1;
             
         }
         
