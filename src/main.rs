@@ -1,11 +1,12 @@
 use std::io;
-use std::{thread, time};
+use std::time;
+use flo_canvas::*;
+use flo_draw::*;
 
 use types::*;
 use gen_vertices::*;
 use triangulation::*;
-use flo_canvas::*;
-use flo_draw::*;
+
 
 mod types;
 mod gen_vertices;
@@ -27,7 +28,7 @@ fn main() {
         
         let mut big_triangle = build_triangle(
             None,
-            [build_coordinates(-100.0, -100.0), build_coordinates(100.0, 0.0), build_coordinates(0.0, 100.0)],
+            [build_point(-100.0, -100.0), build_point(100.0, 0.0), build_point(0.0, 100.0)],
             [None; 3]
         );
         

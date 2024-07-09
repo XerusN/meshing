@@ -1,8 +1,8 @@
 use crate::types::*;
-use core::panic;
-use std::io;
 
-pub fn rescale_vertices(vertices: &mut Vec<Coordinates>) -> (Coordinates, Coordinates) {
+use core::panic;
+
+pub fn rescale_vertices(vertices: &mut Vec<Point>) -> (Point, Point) {
     
     let (mut x_max, mut x_min) = (vertices[0].x, vertices[0].x);
     let (mut y_max, mut y_min) = (vertices[0].y, vertices[0].y);
@@ -32,10 +32,10 @@ pub fn rescale_vertices(vertices: &mut Vec<Coordinates>) -> (Coordinates, Coordi
         vertex.y = (vertex.y - y_min) / scale_factor;
     }
     
-    (build_coordinates(x_min, y_min), build_coordinates(x_max, y_max))
+    (build_point(x_min, y_min), build_point(x_max, y_max))
 }
 
-pub fn scale_back(vertices: &mut Vec<Coordinates>, triangles : &mut Vec<Triangle>, (min, max): (&Coordinates, &Coordinates)) {
+pub fn scale_back(vertices: &mut Vec<Point>, triangles : &mut Vec<Triangle>, (min, max): (&Point, &Point)) {
     
     let scale_factor = if max.x - min.x > max.y - min.y {
         max.x - min.x
@@ -60,7 +60,7 @@ pub fn scale_back(vertices: &mut Vec<Coordinates>, triangles : &mut Vec<Triangle
     
 }
 
-pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, last_triangle_index: usize) -> Option<usize> {
+pub fn find_current_triangle(point: &Point, triangles: &Vec<Triangle>, last_triangle_index: usize) -> Option<usize> {
     
     let mut i = last_triangle_index;
     let mut result: Option<usize> = None;
@@ -118,7 +118,7 @@ pub fn find_current_triangle(point: &Coordinates, triangles: &Vec<Triangle>, las
     
 }
 
-pub fn insert_triangles(point: &Coordinates, triangles : &mut Vec<Triangle>, current_triangle: usize) -> Vec<usize> {
+pub fn insert_triangles(point: &Point, triangles : &mut Vec<Triangle>, current_triangle: usize) -> Vec<usize> {
     
     let old_triangle = triangles[current_triangle].clone();
     let mut new_triangles = Vec::new();
@@ -156,7 +156,7 @@ pub fn insert_triangles(point: &Coordinates, triangles : &mut Vec<Triangle>, cur
     
 }
 
-pub fn deal_with_delaunay_condition(stack : &mut Vec<usize>, triangles : &mut Vec<Triangle>, point: &Coordinates) {
+pub fn deal_with_delaunay_condition(stack : &mut Vec<usize>, triangles : &mut Vec<Triangle>, point: &Point) {
     
     if stack.is_empty() {
         panic!("stack is empty");

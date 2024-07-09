@@ -1,57 +1,11 @@
-use std::{fmt::Error, result};
-
-use curves::bezier::NormalCurve;
+//used to draw the triangles
 use flo_canvas::*;
-use std::f64::consts::PI;
 
-#[derive(Copy, Clone, PartialEq)]
-pub struct Coordinates {
-    // Cartesian direct coordinate system
-    pub x : f64,
-    pub y : f64,
-}
-
-impl Coordinates {
-    pub fn norm(&self) -> f64 {
-        (self.x * self.x + self.y * self.y).sqrt()
-    }
-    
-    pub fn normalize(&self) -> Coordinates{
-        let norm = self.norm();
-        Coordinates {
-            x: self.x/norm,
-            y: self.y/norm,
-        }
-    }
-    
-    pub fn dot_product(&self, other : &Self) -> f64 {
-        self.x * other.x + self.y * other.y
-    }
-    
-    pub fn segment_to(&self, other : &Self) -> Coordinates {
-        Coordinates{
-            x: other.x - self.x,
-            y: other.y - self.y,
-        }
-    }
-    
-    // With z pointing away from the drawing
-    pub fn orthognal_segment(&self) -> Coordinates {
-        Coordinates{
-            x: self.y,
-            y: - self.x,
-        }
-    }
-    
-    pub fn angle_with(&self, other: &Self) -> f64 {
-        (self.dot_product(other) / (self.norm() * other.norm())).acos()
-    }
-    
-}
+use crate::types::base::{point::*, vector::*};
 
 pub struct Triangle {
-    pub center : Option<Coordinates>,
-    pub vertices : [Coordinates; 3],
+    pub center : Option<Point>,
+    pub vertices : [Point; 3],
     pub adjacencies : [Option<usize>; 3],
 }
 
@@ -66,13 +20,10 @@ impl Clone for Triangle {
 impl Triangle {
     
     pub fn compute_center(&mut self) {
-        self.center = Some(Coordinates {
-            x: (self.vertices[0].x + self.vertices[1].x + self.vertices[2].x) / 3.0,
-            y: (self.vertices[0].y + self.vertices[1].y + self.vertices[2].y) / 3.0,
-        });
+        self.center = Some(&(&(&self.vertices[0] + &self.vertices[1]) + &self.vertices[2]) / 3.0)
     }
     
-    pub fn normals(&self) -> [Coordinates; 3] {
+    pub fn normals(&self) -> [Vector; 3] {
         
         let normal1 = self.vertices[0].segment_to(&self.vertices[1]).orthognal_segment().normalize();
         let normal2 = self.vertices[1].segment_to(&self.vertices[2]).orthognal_segment().normalize();
@@ -81,7 +32,7 @@ impl Triangle {
         [normal1, normal2, normal3]
     }
     
-    pub fn edges(&self) -> [Coordinates; 3] {
+    pub fn edges(&self) -> [Vector; 3] {
         
         [
             self.vertices[0].segment_to(&self.vertices[1]),
@@ -91,7 +42,7 @@ impl Triangle {
         
     }
     
-    pub fn vertices_to(&self, point : &Coordinates) -> [Coordinates; 3] {
+    pub fn vertices_to(&self, point : &Point) -> [Vector; 3] {
         [
             self.vertices[0].segment_to(point),
             self.vertices[1].segment_to(point),
@@ -103,7 +54,7 @@ impl Triangle {
         0.5 * (-self.vertices[1].y * self.vertices[2].x + self.vertices[0].y * (-self.vertices[1].x + self.vertices[2].x) + self.vertices[0].x * (self.vertices[1].y - self.vertices[2].y) + self.vertices[1].x * self.vertices[2].y)
     }
     
-    pub fn barycentric_coordinates_from(&self, point: &Coordinates) -> (f64, f64) {
+    pub fn barycentric_coordinates_from(&self, point: &Point) -> (f64, f64) {
         
         let s = ((self.vertices[1].y - self.vertices[2].y) * (point.x - self.vertices[2].x) + (self.vertices[2].x - self.vertices[1].x) * (point.y - self.vertices[2].y)) / ((self.vertices[1].y - self.vertices[2].y) * (self.vertices[0].x - self.vertices[2].x) + (self.vertices[2].x - self.vertices[1].x) * (self.vertices[0].y - self.vertices[2].y));
         let t = ((self.vertices[2].y - self.vertices[0].y) * (point.x - self.vertices[2].x) + (self.vertices[0].x - self.vertices[2].x) * (point.y - self.vertices[2].y)) / ((self.vertices[1].y - self.vertices[2].y) * (self.vertices[0].x - self.vertices[2].x) + (self.vertices[2].x - self.vertices[1].x) * (self.vertices[0].y - self.vertices[2].y));
@@ -112,14 +63,14 @@ impl Triangle {
         
     }
     
-    pub fn trilinear_coordinates_from(&self, point: &Coordinates) -> (f64, f64, f64) {
+    pub fn trilinear_coordinates_from(&self, point: &Point) -> (f64, f64, f64) {
         
         let (s, t) = self.barycentric_coordinates_from(point);
         
         //false according to wikipedia
-        let a = s / self.vertices[0].segment_to(&self.vertices[1]).norm();
-        let b = t / self.vertices[1].segment_to(&self.vertices[2]).norm();
-        let c = (1.0 - s - t) / self.vertices[2].segment_to(&self.vertices[0]).norm();
+        // let a = s / self.vertices[0].segment_to(&self.vertices[1]).norm();
+        // let b = t / self.vertices[1].segment_to(&self.vertices[2]).norm();
+        // let c = (1.0 - s - t) / self.vertices[2].segment_to(&self.vertices[0]).norm();
         
         let a = s / self.vertices[1].segment_to(&self.vertices[2]).norm();
         let b = t / self.vertices[2].segment_to(&self.vertices[0]).norm();
@@ -128,13 +79,13 @@ impl Triangle {
         (a, b, c)
     }
     
-    pub fn include(&self, point : &Coordinates) -> bool {
+    pub fn include(&self, point : &Point) -> bool {
         
         let (s, t) = self.barycentric_coordinates_from(point);
         (s >= 0.0) & (t >= 0.0) & (1.0 - s - t >= 0.0)
     }
     
-    pub fn draw(&self, window_dimension: &(Coordinates, Coordinates), canvas: &DrawingTarget, line_color: &Color) {
+    pub fn draw(&self, window_dimension: &(Point, Point), canvas: &DrawingTarget, line_color: &Color) {
         
         canvas.draw(|gc| {
             // Set up the canvas
@@ -157,9 +108,9 @@ impl Triangle {
         });
     }
     
-    pub fn find_face_to_point(&self, point: &Coordinates, old_triangle: i64) -> Result<usize, &str>{
+    pub fn find_face_to_point(&self, point: &Point, old_triangle: i64) -> Result<usize, &str>{
         
-        // Not working yet, wip. But should be broken no matter what when implementing the constrined version of the triangulation
+        // Not working yet, wip. But should be broken no matter what when implementing the constrained version of the triangulation
         
         let normals = self.normals();
         
@@ -275,7 +226,7 @@ impl Triangle {
         radius
     }
     
-    pub fn is_point_in_circumucircle(&self, point: &Coordinates) -> bool {
+    pub fn is_point_in_circumucircle(&self, point: &Point) -> bool {
         
         let pa = point.segment_to(&self.vertices[0]);
         let pb = point.segment_to(&self.vertices[1]);
@@ -283,15 +234,15 @@ impl Triangle {
         
         //see the circumcircle wikipedia page, this is the determinant of a matrix which will tell if the point is inside or outside of the circumcircle
         // or https://stackoverflow.com/questions/39984709/how-can-i-check-wether-a-point-is-inside-the-circumcircle-of-3-points
-        let det = pa.dot_product(&pa) * (pb.x * pc.y - pc.x * pb.y)
-            - pb.dot_product(&pb) * (pa.x * pc.y - pc.x * pa.y)
-            + pc.dot_product(&pc) * (pa.x * pb.y - pb.x * pa.y)
+        let det = &pa * &pa * (pb.x * pc.y - pc.x * pb.y)
+            - &pb * &pb * (pa.x * pc.y - pc.x * pa.y)
+            + &pc * &pc * (pa.x * pb.y - pb.x * pa.y)
         ;
         
         det > 0.0
     }
     
-    pub fn find_point_in_triangle(&self, point: &Coordinates) -> Option<usize> {
+    pub fn find_point_in_triangle(&self, point: &Point) -> Option<usize> {
         
         for i in 0..self.vertices.len() {
             if point == &self.vertices[i] {
@@ -320,14 +271,7 @@ impl Triangle {
     
 }
 
-pub fn build_coordinates(x: f64, y: f64) -> Coordinates {
-    Coordinates {
-        x: x,
-        y: y,
-    }
-}
-
-pub fn build_triangle(center: Option<Coordinates>, vertices: [Coordinates; 3], adjacencies: [Option<usize>; 3]) -> Triangle {
+pub fn build_triangle(center: Option<Point>, vertices: [Point; 3], adjacencies: [Option<usize>; 3]) -> Triangle {
     
     Triangle {
         center: center,
@@ -335,4 +279,3 @@ pub fn build_triangle(center: Option<Coordinates>, vertices: [Coordinates; 3], a
         adjacencies: adjacencies,
     }
 }
-
