@@ -2,7 +2,6 @@ pub use triangle::*;
 
 pub mod triangle;
 
-pub enum Cell {
-    None,
-    Triangle,
-}
+pub mod cell_trait;
+
+pub use cell_trait::*;

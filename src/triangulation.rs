@@ -60,9 +60,9 @@ pub fn scale_back(vertices: &mut Vec<Point>, triangles : &mut Vec<Triangle>, (mi
     
 }
 
-pub fn find_current_triangle(point: &Point, triangles: &Vec<Triangle>, last_triangle_index: usize) -> Option<usize> {
+pub fn find_current_cell<T: Cell>(point: &Point, mesh: &Vec<T>, last_cell_index: usize) -> Option<usize> {
     
-    let mut i = last_triangle_index;
+    let mut i = last_cell_index;
     let mut result: Option<usize> = None;
     
     
@@ -98,11 +98,11 @@ pub fn find_current_triangle(point: &Point, triangles: &Vec<Triangle>, last_tria
     
     loop {
         
-        if i < triangles.len() {
+        if i < mesh.len() {
             
             //println!("{:?}", i);
             
-            if triangles[i].include(&point) {
+            if mesh[i].include(&point) {
                 result = Some(i);
                 break;
             } else {
@@ -127,26 +127,38 @@ pub fn insert_triangles(point: &Point, triangles : &mut Vec<Triangle>, current_t
     new_triangles.push(triangles.len());
     new_triangles.push(triangles.len() + 1);
     
-    triangles[current_triangle] = build_triangle(None, [old_triangle.vertices[0], old_triangle.vertices[1], point.clone()], [old_triangle.adjacencies[0], Some(new_triangles[1]), Some(new_triangles[2])]);
+    triangles[current_triangle] = build_triangle(None, [old_triangle.vertices[0], old_triangle.vertices[1], point.clone()], [old_triangle.adjacencies[0], Some(Neighbor::Cell(new_triangles[1])), Some(Neighbor::Cell(new_triangles[2]))]);
     
-    triangles.push(build_triangle(None, [old_triangle.vertices[1], old_triangle.vertices[2], point.clone()], [old_triangle.adjacencies[1], Some(new_triangles[2]), Some(new_triangles[0])]));
+    triangles.push(build_triangle(None, [old_triangle.vertices[1], old_triangle.vertices[2], point.clone()], [old_triangle.adjacencies[1], Some(Neighbor::Cell(new_triangles[2])), Some(Neighbor::Cell(new_triangles[0]))]));
     
-    triangles.push(build_triangle(None, [old_triangle.vertices[2], old_triangle.vertices[0], point.clone()], [old_triangle.adjacencies[2], Some(new_triangles[0]), Some(new_triangles[1])]));
+    triangles.push(build_triangle(None, [old_triangle.vertices[2], old_triangle.vertices[0], point.clone()], [old_triangle.adjacencies[2], Some(Neighbor::Cell(new_triangles[0])), Some(Neighbor::Cell(new_triangles[1]))]));
     
     for i in &new_triangles {
         triangles[*i].compute_center();
     }
     
+    //CHECK HOW IT WORKS SINCE NEIGHBOR CHANGE
     for i in 0..3 {
         match triangles[new_triangles[i]].adjacencies[0] {
             None => (),
-            _ => {
-                for j in 0..3 {
-                    if triangles[triangles[new_triangles[i]].adjacencies[0].expect("No value in adjacency when should have been checked")].adjacencies[j] == Some(current_triangle) {
-                        let index = triangles[new_triangles[i]].adjacencies[0].expect("No value in adjacency when should have been checked");
-                        triangles[index].adjacencies[j] = Some(new_triangles[i]);
-                        break;
-                    }
+            Some(neighbor) => {
+                match neighbor {
+                    Neighbor::Boundary => (),
+                    Neighbor::Cell(l) => {
+                        for j in 0..3 {
+                            match triangles[l].adjacencies[j] {
+                                None => (),
+                                Some(k) => match k {
+                                    Neighbor::Boundary => (),
+                                    Neighbor::Cell(m) => {
+                                        if m == current_triangle {
+                                            triangles[l].adjacencies[j] = Some(Neighbor::Cell(new_triangles[i]))
+                                        }
+                                    }
+                                },
+                            }
+                        }
+                    },
                 }
             },
         };
@@ -185,7 +197,10 @@ pub fn deal_with_delaunay_condition(stack : &mut Vec<usize>, triangles : &mut Ve
         
         let (opposite_triangle, opposite_triangle_id) = match triangle.find_face_opposite_to(point_local_id) {
             None => continue,   //No edge swap needed
-            Some(id) => (triangles[id].clone(), id),
+            Some(neighbor) => match neighbor {
+                Neighbor::Cell(id) => (triangles[id].clone(), id),
+                Neighbor::Boundary => continue,
+            }
         };
         
         //If point is not is circumcircle no edge swap is needed
@@ -201,34 +216,46 @@ pub fn deal_with_delaunay_condition(stack : &mut Vec<usize>, triangles : &mut Ve
         let new_triangle_1 = Triangle {
             center: None,
             vertices: [point.clone(), opposite_triangle.vertices[opposite_point_local_id].clone(), triangle.vertices[(point_local_id + 2) % 3].clone()],
-            adjacencies: [Some(opposite_triangle_id), opposite_triangle.adjacencies[opposite_point_local_id], triangle.adjacencies[(point_local_id + 2) % 3]],
+            adjacencies: [Some(Neighbor::Cell(opposite_triangle_id)), opposite_triangle.adjacencies[opposite_point_local_id], triangle.adjacencies[(point_local_id + 2) % 3]],
         };
         
         match opposite_triangle.adjacencies[opposite_point_local_id] {
             None => (),
-            Some(id) => {
-                for i in 0..triangles[id].adjacencies.len() {
-                    if triangles[id].adjacencies[i] == Some(opposite_triangle_id) {
-                        triangles[id].adjacencies[i] = Some(triangle_id);
-                    }
+            Some(neighbor) => {
+                match neighbor {
+                    Neighbor::Boundary => (),
+                    Neighbor::Cell(id) => {
+                        for i in 0..triangles[id].adjacencies.len() {
+                            if triangles[id].adjacencies[i] == Some(Neighbor::Cell(opposite_triangle_id)) {
+                                triangles[id].adjacencies[i] = Some(Neighbor::Cell(triangle_id));
+                            }
+                        }
+                    },
                 }
+                
             },
         }
         
         let new_triangle_2 = Triangle {
             center: None,
             vertices: [point.clone(), triangle.vertices[(point_local_id + 1) % 3].clone(), opposite_triangle.vertices[opposite_point_local_id].clone()],
-            adjacencies: [triangle.adjacencies[point_local_id], opposite_triangle.adjacencies[(opposite_point_local_id + 2) % 3], Some(triangle_id)],
+            adjacencies: [triangle.adjacencies[point_local_id], opposite_triangle.adjacencies[(opposite_point_local_id + 2) % 3], Some(Neighbor::Cell(triangle_id))],
         };
         
         match triangle.adjacencies[point_local_id] {
             None => (),
-            Some(id) => {
-                for i in 0..triangles[id].adjacencies.len() {
-                    if triangles[id].adjacencies[i] == Some(triangle_id) {
-                        triangles[id].adjacencies[i] = Some(opposite_triangle_id);
-                    }
+            Some(neighbor) => {
+                match neighbor {
+                    Neighbor::Boundary => (),
+                    Neighbor::Cell(id) => {
+                        for i in 0..triangles[id].adjacencies.len() {
+                            if triangles[id].adjacencies[i] == Some(Neighbor::Cell(triangle_id)) {
+                                triangles[id].adjacencies[i] = Some(Neighbor::Cell(opposite_triangle_id));
+                            }
+                        }
+                    },
                 }
+                
             },
         }
         
@@ -261,10 +288,10 @@ pub fn remove_big_triangle(triangles: &mut Vec<Triangle>, big_triangle: &Triangl
         {
             for k in 0..triangles.len() {
                 for j in 0..3 {
-                    if triangles[k].adjacencies[j] == Some(i) {
+                    if triangles[k].adjacencies[j] == Some(Neighbor::Cell(i)) {
                         triangles[k].adjacencies[j] = None;
-                    } else if triangles[k].adjacencies[j] == Some(triangles.len() - 1) {
-                        triangles[k].adjacencies[j] = Some(i);
+                    } else if triangles[k].adjacencies[j] == Some(Neighbor::Cell(triangles.len() - 1)) {
+                        triangles[k].adjacencies[j] = Some(Neighbor::Cell(i));
                     }
                 }
             }

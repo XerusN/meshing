@@ -1,12 +1,14 @@
 //used to draw the triangles
 use flo_canvas::*;
 
-use crate::types::base::{point::*, vector::*};
+use crate::types::cells::cell_trait::*;
+
+use crate::types::base::*;
 
 pub struct Triangle {
     pub center : Option<Point>,
     pub vertices : [Point; 3],
-    pub adjacencies : [Option<usize>; 3],
+    pub adjacencies : [Option<Neighbor>; 3],
 }
 
 impl Copy for Triangle { }
@@ -14,6 +16,13 @@ impl Copy for Triangle { }
 impl Clone for Triangle {
     fn clone(&self) -> Triangle {
         *self
+    }
+}
+
+impl Cell for Triangle {
+    fn include(&self, point : &Point) -> bool {
+        let (s, t) = self.barycentric_coordinates_from(point);
+        (s >= 0.0) & (t >= 0.0) & (1.0 - s - t >= 0.0)
     }
 }
 
@@ -77,12 +86,6 @@ impl Triangle {
         let c = (1.0 - s - t) / self.vertices[0].segment_to(&self.vertices[1]).norm();
         
         (a, b, c)
-    }
-    
-    pub fn include(&self, point : &Point) -> bool {
-        
-        let (s, t) = self.barycentric_coordinates_from(point);
-        (s >= 0.0) & (t >= 0.0) & (1.0 - s - t >= 0.0)
     }
     
     pub fn draw(&self, window_dimension: &(Point, Point), canvas: &DrawingTarget, line_color: &Color) {
@@ -253,7 +256,7 @@ impl Triangle {
         None
     }
     
-    pub fn find_face_opposite_to(&self, point_local_id: usize) -> Option<usize> {
+    pub fn find_face_opposite_to(&self, point_local_id: usize) -> Option<Neighbor> {
         
         self.adjacencies[(point_local_id + 1) % 3]
         
@@ -261,7 +264,7 @@ impl Triangle {
     
     pub fn find_point_local_id_opposite_to(&self, adjacent_triangle_id: usize) -> Option<usize> {
         for i in 0..3 {
-            if self.adjacencies[i] == Some(adjacent_triangle_id) {
+            if self.adjacencies[i] == Some(Neighbor::Cell(adjacent_triangle_id)) {
                 return Some((i + 2) % 3);
             }
         }
@@ -271,7 +274,7 @@ impl Triangle {
     
 }
 
-pub fn build_triangle(center: Option<Point>, vertices: [Point; 3], adjacencies: [Option<usize>; 3]) -> Triangle {
+pub fn build_triangle(center: Option<Point>, vertices: [Point; 3], adjacencies: [Option<Neighbor>; 3]) -> Triangle {
     
     Triangle {
         center: center,

@@ -24,7 +24,7 @@ fn main() {
         
         let (min, max) = rescale_vertices(&mut vertices);
         
-        let mut triangles: Vec<Triangle> = Vec::new();
+        let mut mesh: Vec<Triangle> = Vec::new();
         
         let mut big_triangle = build_triangle(
             None,
@@ -34,7 +34,7 @@ fn main() {
         
         big_triangle.compute_center();
         
-        triangles.push(big_triangle.clone());
+        mesh.push(big_triangle.clone());
         
         let mut current_triangle = 0;
         
@@ -51,9 +51,9 @@ fn main() {
         
         for point in &vertices {
             //println!("Current point : ({:?}, {:?})", point.x, point.y);
-            current_triangle = find_current_triangle(point, &triangles, current_triangle).expect("No triangle found");
+            current_triangle = find_current_cell(point, &mesh, current_triangle).expect("No triangle found");
             
-            let mut stack = insert_triangles(point, &mut triangles, current_triangle);
+            let mut stack = insert_triangles(point, &mut mesh, current_triangle);
             
             // canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
             
@@ -63,7 +63,7 @@ fn main() {
             
             //thread::sleep(time_step);
             
-            deal_with_delaunay_condition(&mut stack, &mut triangles, point);
+            deal_with_delaunay_condition(&mut stack, &mut mesh, point);
             
             // canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
             
@@ -78,13 +78,13 @@ fn main() {
             
         }
         
-        remove_big_triangle(&mut triangles, &big_triangle);
+        remove_big_triangle(&mut mesh, &big_triangle);
         
-        scale_back(&mut vertices, &mut triangles, (&min, &max));
+        scale_back(&mut vertices, &mut mesh, (&min, &max));
         
         canvas.draw(|gc| { gc.clear_canvas(Color::Rgba(1.0, 1.0, 1.0, 1.0)) });
         
-        for triangle in &triangles {
+        for triangle in &mesh {
             triangle.draw(&window_dimension, &canvas, &line_color);
         }
         
