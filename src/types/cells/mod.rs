@@ -1,3 +1,5 @@
+//! Provides every cell type and the trait they should all use.
+
 pub use triangle::*;
 
 pub mod triangle;

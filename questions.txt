@@ -1,0 +1,5 @@
+- Type Iter in Cell, should I return Iter<&Point> ? How ?
+- build functions for point, vector ? And Cell ?
+
+To do :
+- remove Option in adjacencies (triangle) and provide None in neighbor
