@@ -173,6 +173,7 @@ impl Vector {
     }
 }
 
+#[allow(dead_code)]
 /// Creates a new vector
 ///
 /// # Example

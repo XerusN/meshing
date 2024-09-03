@@ -66,7 +66,7 @@ pub fn scale_back(
 /// For now only a bruteforce (but not very efficient) algorithm is implemented.
 pub fn find_current_cell<T: Cell>(point: &Point, mesh: &Vec<T>) -> Option<usize> {
     let mut i = 0;
-    let mut result;
+    let result;
 
     loop {
         if i < mesh.len() {
@@ -78,6 +78,7 @@ pub fn find_current_cell<T: Cell>(point: &Point, mesh: &Vec<T>) -> Option<usize>
             }
         } else {
             result = None;
+            break;
         }
     }
 

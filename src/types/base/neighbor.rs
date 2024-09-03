@@ -3,6 +3,7 @@
 ///
 /// Cell is constructed to store the index of the adjacent cell.
 /// A pointer is not used since any change in the Cell array would bring an error.
+#[allow(dead_code)]
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Neighbor {
     Boundary,
