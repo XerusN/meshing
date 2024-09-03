@@ -6,7 +6,6 @@ use crate::types::cells::cell_trait::*;
 use crate::types::base::*;
 
 pub struct Triangle {
-    pub center : Option<Point>,
     pub vertices : [Point; 3],
     pub adjacencies : [Option<Neighbor>; 3],
 }
@@ -20,26 +19,27 @@ impl Clone for Triangle {
 }
 
 impl Cell for Triangle {
+    
     fn include(&self, point : &Point) -> bool {
         let (s, t) = self.barycentric_coordinates_from(point);
         (s >= 0.0) & (t >= 0.0) & (1.0 - s - t >= 0.0)
     }
+    
+    fn center(&self) -> Point {
+        &(&(&self.vertices[0] + &self.vertices[1]) + &self.vertices[2]) / 3.0
+    }
+    
+    fn normals(&self) -> Vec<Vector> {
+        
+        let normal1 = self.vertices[0].segment_to(&self.vertices[1]).orthogonal_vector().normalize();
+        let normal2 = self.vertices[1].segment_to(&self.vertices[2]).orthogonal_vector().normalize();
+        let normal3 = self.vertices[2].segment_to(&self.vertices[0]).orthogonal_vector().normalize();
+        
+        vec![normal1, normal2, normal3]
+    }
 }
 
 impl Triangle {
-    
-    pub fn compute_center(&mut self) {
-        self.center = Some(&(&(&self.vertices[0] + &self.vertices[1]) + &self.vertices[2]) / 3.0)
-    }
-    
-    pub fn normals(&self) -> [Vector; 3] {
-        
-        let normal1 = self.vertices[0].segment_to(&self.vertices[1]).orthognal_segment().normalize();
-        let normal2 = self.vertices[1].segment_to(&self.vertices[2]).orthognal_segment().normalize();
-        let normal3 = self.vertices[2].segment_to(&self.vertices[0]).orthognal_segment().normalize();
-        
-        [normal1, normal2, normal3]
-    }
     
     pub fn edges(&self) -> [Vector; 3] {
         
@@ -274,10 +274,9 @@ impl Triangle {
     
 }
 
-pub fn build_triangle(center: Option<Point>, vertices: [Point; 3], adjacencies: [Option<Neighbor>; 3]) -> Triangle {
+pub fn build_triangle(vertices: [Point; 3], adjacencies: [Option<Neighbor>; 3]) -> Triangle {
     
     Triangle {
-        center: center,
         vertices: vertices,
         adjacencies: adjacencies,
     }

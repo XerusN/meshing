@@ -1,3 +1,5 @@
+//! Main file
+
 use std::io;
 use std::time;
 use flo_canvas::*;
@@ -11,6 +13,7 @@ use triangulation::*;
 mod types;
 mod gen_vertices;
 mod triangulation;
+
 
 fn main() {
     
@@ -27,12 +30,9 @@ fn main() {
         let mut mesh: Vec<Triangle> = Vec::new();
         
         let mut big_triangle = build_triangle(
-            None,
             [build_point(-100.0, -100.0), build_point(100.0, 0.0), build_point(0.0, 100.0)],
             [None; 3]
         );
-        
-        big_triangle.compute_center();
         
         mesh.push(big_triangle.clone());
         

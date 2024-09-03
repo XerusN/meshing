@@ -127,15 +127,11 @@ pub fn insert_triangles(point: &Point, triangles : &mut Vec<Triangle>, current_t
     new_triangles.push(triangles.len());
     new_triangles.push(triangles.len() + 1);
     
-    triangles[current_triangle] = build_triangle(None, [old_triangle.vertices[0], old_triangle.vertices[1], point.clone()], [old_triangle.adjacencies[0], Some(Neighbor::Cell(new_triangles[1])), Some(Neighbor::Cell(new_triangles[2]))]);
+    triangles[current_triangle] = build_triangle([old_triangle.vertices[0], old_triangle.vertices[1], point.clone()], [old_triangle.adjacencies[0], Some(Neighbor::Cell(new_triangles[1])), Some(Neighbor::Cell(new_triangles[2]))]);
     
-    triangles.push(build_triangle(None, [old_triangle.vertices[1], old_triangle.vertices[2], point.clone()], [old_triangle.adjacencies[1], Some(Neighbor::Cell(new_triangles[2])), Some(Neighbor::Cell(new_triangles[0]))]));
+    triangles.push(build_triangle([old_triangle.vertices[1], old_triangle.vertices[2], point.clone()], [old_triangle.adjacencies[1], Some(Neighbor::Cell(new_triangles[2])), Some(Neighbor::Cell(new_triangles[0]))]));
     
-    triangles.push(build_triangle(None, [old_triangle.vertices[2], old_triangle.vertices[0], point.clone()], [old_triangle.adjacencies[2], Some(Neighbor::Cell(new_triangles[0])), Some(Neighbor::Cell(new_triangles[1]))]));
-    
-    for i in &new_triangles {
-        triangles[*i].compute_center();
-    }
+    triangles.push(build_triangle([old_triangle.vertices[2], old_triangle.vertices[0], point.clone()], [old_triangle.adjacencies[2], Some(Neighbor::Cell(new_triangles[0])), Some(Neighbor::Cell(new_triangles[1]))]));
     
     //CHECK HOW IT WORKS SINCE NEIGHBOR CHANGE
     for i in 0..3 {
@@ -214,7 +210,6 @@ pub fn deal_with_delaunay_condition(stack : &mut Vec<usize>, triangles : &mut Ve
         };
         
         let new_triangle_1 = Triangle {
-            center: None,
             vertices: [point.clone(), opposite_triangle.vertices[opposite_point_local_id].clone(), triangle.vertices[(point_local_id + 2) % 3].clone()],
             adjacencies: [Some(Neighbor::Cell(opposite_triangle_id)), opposite_triangle.adjacencies[opposite_point_local_id], triangle.adjacencies[(point_local_id + 2) % 3]],
         };
@@ -237,7 +232,6 @@ pub fn deal_with_delaunay_condition(stack : &mut Vec<usize>, triangles : &mut Ve
         }
         
         let new_triangle_2 = Triangle {
-            center: None,
             vertices: [point.clone(), triangle.vertices[(point_local_id + 1) % 3].clone(), opposite_triangle.vertices[opposite_point_local_id].clone()],
             adjacencies: [triangle.adjacencies[point_local_id], opposite_triangle.adjacencies[(opposite_point_local_id + 2) % 3], Some(Neighbor::Cell(triangle_id))],
         };
